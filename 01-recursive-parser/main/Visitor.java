@@ -60,7 +60,7 @@ public class Visitor {
 				return visit(b.get(0));
 		}
 		case term: {
-			if(b.get(0).token().name == Token.Type.LP)
+			if(b.get(0).size() == 3) // '(' addsub ')'
 				return visit(b.get(1));
 			else
 				return visit(b.get(0));

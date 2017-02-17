@@ -27,7 +27,7 @@ public class TreeParser {
 		}
 		public int size() {
 			if(name == NodeType.terminal)
-				throw new RuntimeException("terminal node doesn't have children!");
+				return 1;
 			return ((Branch)this).children.size();
 		}
 		public Iterator<Node> iterator() {
@@ -170,7 +170,8 @@ public class TreeParser {
 			return n;
 		}
 		else { //unary?
-			return unary();
+			n.add(unary());
+			return n;
 		}
 	}
 	
