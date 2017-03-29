@@ -49,8 +49,7 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 		if(ctx.op.getType() == GrammarLexer.Plus) {
 			return a;
 		} else if (ctx.op.getType() == GrammarLexer.Minus) {
-			Command command = new Command(Command.Op.UnaryMinus, new Address(a));
-			this.commands.add(command);
+			Command command = new Command(this.commands, Command.Op.Sub, new Address(0.0), new Address(a));
 			return command;
 		}
 		return null;
@@ -61,9 +60,8 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 		Command a = visit(ctx.expr(0));
 		Command b = visit(ctx.expr(1));
 		if(ctx.op.getType() == GrammarLexer.Exp) {
-			Command command = new Command(Command.Op.Exp, new Address(a),
+			Command command = new Command(this.commands, Command.Op.Exp, new Address(a),
 					new Address(b));
-			this.commands.add(command);
 			return command;
 		}
 		return null;
@@ -74,14 +72,12 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 		Command a = visit(ctx.expr(0));
 		Command b = visit(ctx.expr(1));
 		if(ctx.op.getType() == GrammarLexer.Mult) {
-			Command command = new Command(Command.Op.Mult, new Address(a),
+			Command command = new Command(this.commands, Command.Op.Mult, new Address(a),
 					new Address(b));
-			this.commands.add(command);
 			return command;
 		} else if (ctx.op.getType() == GrammarLexer.Div) {
-			Command command = new Command(Command.Op.Div, new Address(a),
+			Command command = new Command(this.commands, Command.Op.Div, new Address(a),
 					new Address(b));
-			this.commands.add(command);
 			return command;
 		}
 		return null;
@@ -92,14 +88,12 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 		Command a = visit(ctx.expr(0));
 		Command b = visit(ctx.expr(1));
 		if(ctx.op.getType() == GrammarLexer.Plus) {
-			Command command = new Command(Command.Op.Add, new Address(a),
+			Command command = new Command(this.commands, Command.Op.Add, new Address(a),
 					new Address(b));
-			this.commands.add(command);
 			return command;
 		} else if (ctx.op.getType() == GrammarLexer.Minus) {
-			Command command = new Command(Command.Op.Sub, new Address(a),
+			Command command = new Command(this.commands, Command.Op.Sub, new Address(a),
 					new Address(b));
-			this.commands.add(command);
 			return command;
 		}
 		return null;
@@ -113,8 +107,7 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 	@Override
 	public Command visitLitNum(LitNumContext ctx) {
 		double value = Double.parseDouble(ctx.Num().getText());
-		this.commands.add(new Command(Command.Op.Assign, new Address(value)));
-		return null;
+		return new Command(this.commands, Command.Op.Assign, new Address(value));
 	}
 	
 	@Override
@@ -136,7 +129,7 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 		
 		int i = 0;
 		for (TerminalNode var : ctx.arglist().Var()) {
-			visitor.variables.put(var.getText(), new Command(
+			visitor.variables.put(var.getText(), new Command(visitor.commands, 
 					Command.Op.Assign, new Address(i)
 					));
 			i++;
@@ -160,21 +153,14 @@ public class ThreeAddrVisitor extends GrammarBaseVisitor<Command> {
 		}
 		List<ExprContext> argList = ctx.exprlist().expr();
 		FunctionDef def = functions.get(functionName);
-		if(argList.size() != def.varList.size()) {
+		if(argList.size() != def.numArgs) {
 			return null;
 		}
-		List<List<Command>> argValList = new ArrayList<List<Command>>();
 		for (ExprContext expr : argList) {
-			argValList.add(visit(expr));
+			Command cmd = visit(expr);
+			new Command(this.commands, Command.Op.Param, new Address(cmd));
 		}
-		HashMap<String, List<Command>> oldvars = new HashMap<String, List<Command>>(variables);
-		for(int i=0; i<argList.size(); ++i) {
-			String varName = def.varList.get(i);
-			List<Command> varVal = argValList.get(i);
-			variables.put(varName, varVal);
-		}
-		List<Command> funcValue = visit(def.body);
-		variables = oldvars;
- 		return funcValue;
+		Command callCmd = new Command(this.commands, Command.Op.Call, new Address(functionName));
+ 		return callCmd;
 	}
 }
